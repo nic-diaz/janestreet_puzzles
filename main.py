@@ -122,11 +122,11 @@ class Puzzle:
             
         if points > 165379868:
             print(f"Score qualifies for leaderboard! Saving board...")
-            filename = f"{points}.txt"
+            filename = f"leadership_board_{points}.txt"
             self.save_board_to_file(filename=filename)
             
             
-        print(f"Points: {points}")
+        #print(f"Points: {points}")
         return points
     
     def save_board_to_file(self, filename: str):
@@ -160,16 +160,24 @@ class Puzzle:
                 possible_states.remove(state)
                 
         return possible_states
+    
+    def run_forever(self, threshold: int = 80000000) -> None:
+        
+        while(True):
+            self.board = self.generate_random_board()
+            matched_states = self.search_states()
+            points = self.calculate_score(matched_states)
+            
+            if points> threshold:
+                self.save_board_to_file(f"board_{points}.txt")        
 
-    def run(self) -> None:
+    def run_iterations(self, iterations: int  = 1000000, threshold: int = 80000000) -> None:
         
         max_points = 0
         all_points = []
-        
-        threshold = 80000000
-        
+                
         start_time = time.time()
-        for _ in range(100000):
+        for _ in range(iterations):
             self.board = self.generate_random_board()
             matched_states = self.search_states()
             points = self.calculate_score(matched_states)
@@ -181,11 +189,13 @@ class Puzzle:
                 
             max_points = max(max_points, points)
         
-        all_points.append(165379868)
+        all_points.append(0) # Min Value
+        all_points.append(165379868) # Target Value
+        
+        # Normalize Points
         all_points = np.array(all_points)
         min_val = np.min(all_points)
         max_val = np.max(all_points)
-        
         normalized_points = (all_points - min_val) / (max_val - min_val)
         
         end_time = time.time()
@@ -257,7 +267,8 @@ class Puzzle:
 
 
 puzzle = Puzzle("states.csv")
-puzzle.run()
+#puzzle.run_iterations()
+puzzle.run_forever()
 #puzzle.find_states_in_board("board_86394544.txt")
 
 # puzzle.run()
