@@ -171,45 +171,71 @@ class Puzzle:
             if points> threshold:
                 self.save_board_to_file(f"board_{points}.txt")        
 
-    def run_iterations(self, iterations: int  = 1000000, threshold: int = 80000000) -> None:
+    def run_iterations(self, iterations: int  = 100000, threshold: int = 110000000) -> None:
         
-        max_points = 0
-        all_points = []
+        # max_points_random = 0
+        # all_points_random = []
                 
-        start_time = time.time()
+        # for _ in range(iterations):
+        #     self.board = self.generate_random_board()            
+        #     matched_states = self.search_states()
+        #     points = self.calculate_score(matched_states)
+        #     all_points_random.append(points)
+            
+        #     if points> threshold:
+        #         self.save_board_to_file(f"board_{points}_random.txt")
+                
+        #     max_points_random = max(max_points_random, points)
+        
+        # all_points_random.append(0) # Min Value
+        # all_points_random.append(165379868) # Target Value
+        
+        # # Normalize Points Random
+        # all_points_random = np.array(all_points_random)
+        # min_val = np.min(all_points_random)
+        # max_val = np.max(all_points_random)
+        # normalized_points_random = (all_points_random - min_val) / (max_val - min_val)
+        
+        
+        
+        max_points_weighted = 0
+        all_points_weighted = []
+                
+        freqs = letter_frequency(self.state_list)
         for _ in range(iterations):
-            self.board = self.generate_random_board()
+            self.board = self.generate_weighted_grid(freqs)
+            
             matched_states = self.search_states()
             points = self.calculate_score(matched_states)
-            
+            all_points_weighted.append(points)
             
             if points> threshold:
-                all_points.append(points)
-                self.save_board_to_file(f"board_{points}.txt")
+                self.save_board_to_file(f"board_{points}_weighted.txt")
                 
-            max_points = max(max_points, points)
+            max_points_weighted = max(max_points_weighted, points)
         
-        all_points.append(0) # Min Value
-        all_points.append(165379868) # Target Value
+        all_points_weighted.append(0) # Min Value
+        all_points_weighted.append(165379868) # Target Value
         
-        # Normalize Points
-        all_points = np.array(all_points)
-        min_val = np.min(all_points)
-        max_val = np.max(all_points)
-        normalized_points = (all_points - min_val) / (max_val - min_val)
-        
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        
-        print(f"Elapsed time: {elapsed_time}")
-        print(f"Max score found: {max_points}")
+        # Normalize Points Random
+        all_points_weighted = np.array(all_points_weighted)
+        min_val = np.min(all_points_weighted)
+        max_val = np.max(all_points_weighted)
+        normalized_points_weighted = (all_points_weighted - min_val) / (max_val - min_val)
         
         # Plot the normalized points
         plt.figure(figsize=(10, 6))
-        plt.plot(normalized_points, 'o', markersize=1)
+        #plt.plot(normalized_points_random, 'o', markersize=1, label='Random Points')
+        plt.plot(normalized_points_weighted, 'o', markersize=1, color='red', label='Weighted Points')
+        plt.legend()
         plt.title('Normalized Points')
         plt.xlabel('Index')
-        plt.ylabel('Normalized Value')
+        plt.ylabel('Normalized Values')
+        
+        
+        
+        
+        
         plt.show()
         
         
@@ -264,11 +290,43 @@ class Puzzle:
             new_r, new_c = r + dr, c + dc
             self.dfs(new_r, new_c, current_path, new_possible_states, matched_states)
 
-
-
+    def generate_weighted_grid(self, frequencies: dict[str,float]):
+        grid_size = self.size
+        
+        # Create a list of letters and their corresponding weights
+        letters = list(frequencies.keys())
+        weights = list(frequencies.values())
+        
+        # Generate the grid
+        grid = []
+        for _ in range(grid_size):
+            row = ''.join(random.choices(letters, weights, k=grid_size))
+            grid.append(row)
+        
+        return grid
+    
+def letter_frequency(words: list[str]):
+    
+    # Initialize a dictionary with keys a-z and values 0
+    letter_counts = {letter: 0 for letter in string.ascii_lowercase}
+    
+    # Count the total number of letters
+    total_letters = 0
+    
+    # Iterate through each word and count the letters
+    for word in words:
+        for char in word.lower():  # Convert to lowercase to count all letters uniformly
+            if char in letter_counts:
+                letter_counts[char] += 1
+                total_letters += 1
+    
+    # Normalize the counts to get frequencies between 0 and 1
+    letter_frequencies = {letter: count / total_letters for letter, count in letter_counts.items()}
+    
+    return letter_frequencies
 puzzle = Puzzle("states.csv")
-#puzzle.run_iterations()
-puzzle.run_forever()
+puzzle.run_iterations(100000)
+#puzzle.run_forever()
 #puzzle.find_states_in_board("board_86394544.txt")
 
 # puzzle.run()
