@@ -1,9 +1,11 @@
 import string
 import random
 import csv
+import json
 
 state_population_dict = {}
 state_list = []
+letters_set = set()
 
 total_population = 0
 # Read CSV data from file
@@ -16,15 +18,18 @@ with open("states.csv", mode="r") as file:
         state_population_dict[state.strip()] = int(population.strip())
         state_list.append(state.strip())
         total_population += int(population.strip())
+        
+        for letter in state:
+            letters_set.add(letter)
 
 
-def adjust_for_popluation(
-    letters_count: dict[str, int],
+def letters_adjusted_for_popluation(
+    letters_set: set,
     total_population: int,
     state_population_dict: dict[str, int],
 ):
 
-    weights = {key: 0 for key in letters_count.keys()}
+    weights = {letter: 0 for letter in letters_set}
     for state, popluation in state_population_dict.items():
         population_weight = popluation / total_population
 
@@ -32,16 +37,20 @@ def adjust_for_popluation(
         for letter in state:
             
             if letter in weights and letter not in state_letters:
-                weights[letter] += population_weight * 100000
+                weights[letter] += population_weight
                 state_letters.add(letter)
 
-    for letter in letters_count:
-        weights[letter] = weights[letter] + letters_count[letter]
+
 
     return weights
 
 
 def letter_counts(states: list[str]):
+    """ Returns dictionary with
+            key: letters
+            value: number of occurrences
+            
+    """
 
     # Initialize a dictionary with keys a-z and values 0
     letter_counts = {letter: 0 for letter in string.ascii_lowercase}
@@ -70,7 +79,7 @@ def letter_counts(states: list[str]):
 def normalize_weights(weights: dict[str, int]) -> dict[str, int]:
 
     total_weight = 0
-    for letter, weight in weights.items():
+    for _, weight in weights.items():
         total_weight += weight
 
     return {letter: weight / total_weight for letter, weight in weights.items()}
@@ -95,41 +104,55 @@ def generate_weighted_grid(
 
     return grid
 
+def read_weights_from_file(filename: str):
+    with open(f"{filename}.json", 'r') as json_file:
+        return json.load(json_file)
 
-letter_count = letter_counts(state_list)
-weights = adjust_for_popluation(letter_count, total_population, state_population_dict)
-normalized_weights = normalize_weights(weights)
-grid = generate_weighted_grid(normalized_weights, state_population_dict)
+def write_weights_to_file(filename: str) -> None:
+    with open(f"{filename}.json", 'w') as json_file:
+        json.dump(normalized_weights, json_file, indent=4)
 
-breakpoint()
-print(normalized_weights)
-
-WEIGHTS = {
-    "a": 0.2745777953719077,
-    "b": 0.00016607996944490098,
-    "c": 0.014451532421964449,
-    "d": 0.006546849908647176,
-    "e": 0.05744408569472926,
-    "f": 0.001452030260116045,
-    "g": 0.005177561852080407,
-    "h": 0.01216277591193588,
-    "i": 0.17731892350452413,
-    "j": 0.00011041824801127295,
-    "k": 0.005168743934726413,
-    "l": 0.0256179625312402,
-    "m": 0.009028566146397316,
-    "n": 0.14742922728074995,
-    "o": 0.1061213862402939,
-    "p": 0.0009653567093642425,
-    "r": 0.0463024912556483,
-    "s": 0.07039779785859618,
-    "t": 0.02279480697211818,
-    "u": 0.003350333590099214,
-    "v": 0.0016151754963079682,
-    "w": 0.007138081679180274,
-    "x": 0.000743247044592584,
-    "y": 0.0038337602312709497,
-    "z": 8.500988605322756e-05,
-}
+def combine_weights(weights_1, weights_2, bias_1, bias_2):
+    """
+    Combines two sets of weights with given biases.
+    
+    Parameters:
+    - weights_1: dict, first set of weights
+    - weights_2: dict, second set of weights
+    - bias_1: float, bias for the first set of weights (e.g., 0.4 for 40%)
+    - bias_2: float, bias for the second set of weights (e.g., 0.6 for 60%)
+    
+    Returns:
+    - dict, combined weights
+    """
+    weights_combined = {}
+    
+    for key in weights_1:
+        if key in weights_2:
+            weights_combined[key] = bias_1 * weights_1[key] + bias_2 * weights_2[key]
+        else:
+            weights_combined[key] = bias_1 * weights_1[key]
+    
+    for key in weights_2:
+        if key not in weights_combined:
+            weights_combined[key] = bias_2 * weights_2[key]
+    
+    return weights_combined
 
 
+# weights_1 = letter_counts(state_list)
+# normalized_weights = normalize_weights(weights_1)
+# write_weights_to_file("weights_letter_count")
+
+
+# weights_2 = letters_adjusted_for_popluation(letters_set, total_population, state_population_dict)
+# normalized_weights = normalize_weights(weights_2)
+# write_weights_to_file("weights_letters_adjusted_for_population")
+
+
+
+# bias_1  = 0.4
+# bias_2 = 0.6
+# combined_weights = combine_weights(weights_1, weights_2, bias_1, bias_2)
+# normalize_weights = normalize_weights(combined_weights)
+# write_weights_to_file("combined_40_count_60_pop")
