@@ -9,6 +9,33 @@ MAX_INT = sys.maxsize
 MIN_INT = -sys.maxsize - 1
 import time
 
+WEIGHTS = {
+    "a": 0.11082419125285721,
+    "b": 0.003238955854633758,
+    "c": 0.043606550095286606,
+    "d": 0.022700973353598945,
+    "e": 0.05970183330297609,
+    "f": 0.028294330008633344,
+    "g": 0.020270205101292058,
+    "h": 0.030982062705611442,
+    "i": 0.09692577586296637,
+    "j": 0.0043042964407431035,
+    "k": 0.018069664296860015,
+    "l": 0.06063992187111965,
+    "m": 0.025151737035725985,
+    "n": 0.09932962257398625,
+    "o": 0.09233584953088123,
+    "p": 0.008038905958553584,
+    "r": 0.07721214086036975,
+    "s": 0.06035350652983404,
+    "t": 0.04108166105849405,
+    "u": 0.016331678881959816,
+    "v": 0.012595651475236986,
+    "w": 0.025303750016762046,
+    "x": 0.014484442653075592,
+    "y": 0.024908106673486082,
+    "z": 0.0033141866050560276
+}
 
 
 class Puzzle:
@@ -41,6 +68,7 @@ class Puzzle:
             next(csv_reader)  # Skip header row
             for row in csv_reader:
                 state, population = row
+                state = state.replace(" ", "")
                 state_population_dict[state.strip()] = int(population.strip())
                 state_list.append(state.strip())
                 
@@ -161,15 +189,16 @@ class Puzzle:
                 
         return possible_states
     
-    def run_forever(self, threshold: int = 80000000) -> None:
-        
+    def run_forever(self, threshold: int = 130000000) -> None:
+                
         while(True):
-            self.board = self.generate_random_board()
+            self.board = self.generate_weighted_grid()
+            
             matched_states = self.search_states()
             points = self.calculate_score(matched_states)
             
             if points> threshold:
-                self.save_board_to_file(f"board_{points}.txt")        
+                self.save_board_to_file(f"board_{points}_weighted.txt")   
 
     def run_iterations(self, iterations: int  = 100000, threshold: int = 110000000) -> None:
         
@@ -290,12 +319,12 @@ class Puzzle:
             new_r, new_c = r + dr, c + dc
             self.dfs(new_r, new_c, current_path, new_possible_states, matched_states)
 
-    def generate_weighted_grid(self, frequencies: dict[str,float]):
+    def generate_weighted_grid(self):
         grid_size = self.size
         
         # Create a list of letters and their corresponding weights
-        letters = list(frequencies.keys())
-        weights = list(frequencies.values())
+        letters = list(WEIGHTS.keys())
+        weights = list(WEIGHTS.values())
         
         # Generate the grid
         grid = []
@@ -324,12 +353,28 @@ def letter_frequency(words: list[str]):
     letter_frequencies = {letter: count / total_letters for letter, count in letter_counts.items()}
     
     return letter_frequencies
+
 puzzle = Puzzle("states.csv")
-puzzle.run_iterations(100000)
-#puzzle.run_forever()
+#puzzle.run_iterations(1000000)
+puzzle.run_forever()
 #puzzle.find_states_in_board("board_86394544.txt")
 
 # puzzle.run()
 # states = ["texas", "california", "ohio", "new york", "michigan", "florida", "georgia", "virginia", "washington", "pennsylvania"]
 # puzzle.calculate_score(states)
+
+# Other boards over 130M
+# oxdco
+# ehaoa
+# ruslo
+# wrier
+# izang
+
+
+# # 
+# leufo
+# vtsih
+# asanl
+# raioa
+# anorc
 
